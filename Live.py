@@ -6,49 +6,59 @@ SEATS =['D10', 'D09', 'D08', 'D07', 'D06', 'D05', 'D04', 'D03', 'D02', 'D01',
         'A10', 'A09', 'A08', 'A07', 'A06', 'A05', 'A04', 'A03', 'A02', 'A01']
 
 
-
-
-
 import mysql.connector as M
-def connect(s):
-    if s==True:
-        connect_t= M.connect(user="root",password="root",host="localhost")
-        return connect_t
-    else:
-        connect_t=M.connect(user="root",password="root",host="localhost",database="THEATRE")
-        return connect_t
-        
-con=connect(1)
-C=con.cursor()
+def connect():
+        return M.connect(user="root",password="root",host="localhost",database="theatre")
 
-C.execute("DROP DATABASE IF EXISTS THEATRE")
-C.execute("CREATE DATABASE THEATRE")
-C.execute("USE THEATRE")
-
-  
-C.execute("CREATE TABLE Movies(MCode int(1) primary key,MName varchar)")
-for i in MOVIES:
-  C.execute("insert into Movies values(%s,'%s')"%(i,i[1]))
-C.execute("CREATE TABLE Screen(Screen int(1) Primary key,Morning varchar,Noon varchar, Night varchar)")
-
-for i in range(SCREENS):
-  C.execute("INSERT INTO Movies values(%s)"%(i))
-
-C.execute("CREATE TABLE Tickets(Screen int(1) Primary key,Morning varchar,Noon varchar, Night varchar)")
-
-for i in  range(SCREENS):
-  C.execute("INSERT INTO Tickets values(%s)"%(i))
-con.commit()
-con.close()
-
-def getMovies():
+def init(): #Initialize databases
     con=connect()
     C=con.cursor()
-    C.execute("USE THEATRE")
-    C.execute("select * from MOVIES")
-    gm_M=C.fetchall()
+    try:
+        C.execute("DROP DATABASE THEATRE")
+    except:
+        pass
+    C.execute("CREATE DATABASE THEATRE")
+    C.execute("USE THEATRE")   
+    C.execute("CREATE TABLE Movies(MCode int(1) primary key,MName varchar(64))")
+    C.execute("CREATE TABLE Screens(Screen int(1) Primary key)")
+    C.execute("CREATE TABLE Tickets(id int(1) Primary key,name varchar(64),screen int,movie varchar(64),\
+                seat varchar(10),time varchar(64))")             
+    for i in range(len(MOVIES)):
+      C.execute("insert into Movies values(%s,'%s')"%(i+1,MOVIES[i]))
+    for i in range(SCREENS):
+        C.execute("insert into Screens value(%s)"%(i+1))
+    C.execute("alter table screens add(t1 varchar(999) default '[]')")
+    C.execute("alter table screens add(t2 varchar(999) default '[]')")
+    C.execute("alter table screens add(t3 varchar(999) default '[]')")
+    con.commit()
     con.close()
-    return gm_M
+    
+def space(s,u):
+    print(' '*s,'_'*u)
+    
+def printMovies():
+    con=connect()
+    C=con.cursor()
+    C.execute("select * from MOVIES")
+    cf= C.fetchall()
+    space(0,21)
+    print(" "*7,"MOVIES")
+    for i in cf:
+        print ('¦',i[0],''*3,i[1])
+    con.close()
+def printScreens():
+   for i in range(SCREENS):
+       print("¦",i+1," SCREEN",str(i+1))
+def printTimings():
+    print("¦",1,"MORNING 9:00 AM")
+    print("¦",2,"NOON 1:00 PM")
+    print("¦",3,"NIGHT 7:00 PM")
+
+def getScreens(a_):
+    con= connect()
+    C=con.cursor()
+    C.execute("select Screen,t%s from screens"%(a_))
+    return C.fetchall()
      
 
 
@@ -74,6 +84,16 @@ def DISPLAYSEATS(MSeat,MAudi,MTime,MName):#movie Seating  variable
     print(" "*17,"#######SCREEN HERE#######")
 
 
+
+
+
+
+
+
+
+
+init()
+
 while True:
     print("\
     ¦1| View Movies        ¦\n\
@@ -85,9 +105,53 @@ while True:
     CHOICE=int(input("¦ Enter your choice: "))
 
     if CHOICE == 1: #View Movies
-        u_movies=getMovies()
-        for i in u_movies:
-            print (i)
+        printMovies()
+
+    if CHOICE == 2:
+        space(0,45)
+        print(" "*15,"TICKET BOOKING")
+        print("(1/3) SELECT MOVIE")
+        printMovies();print()
+        movieC=int(input("¦ Enter movie code: "))
+        space(0,21)
+        printTimings();print()
+        movieT=int(input("¦ Enter movie timing code: "))
+        space(0,21)
+        c_gScreen = getScreens(movieT)
+        print(" "* 5,"Screen status for given timing")
+        countFree=SCREENS
+        canBook=False
+        for i in range(len(c_gScreen)):
+            try:
+                print("¦ ",i+1,"   SCREEN",c_gScreen[i][0]," "*5,MOVIES[eval(c_gScreen[i][1])[1]] )
+                countFree-=1
+            except:
+                print("¦ ",i+1,"   SCREEN",c_gScreen[i][0]," "*5,"TBD" )
+        if countFree !=0:
+            movieS=int(input("¦ Enter Screen code: "))
+            try:
+                if eval(c_gScreen[i][1])[1] == movieS:
+                    canBook= True
+
+            except:
+                canBook = True
+        
+
+            if canBook == True:
+                #Book
+                pass
+            else:
+                print("No Screens found Matching Conditions, Try again")
+                continue
+        else:
+            continue
+
+
+
+
+
+
+            
     continue_choice=input("Continue? ")
     if continue_choice in "Nn":
         break
